@@ -1,6 +1,9 @@
 # Br1.GitPack
 Command Line util to generate a Package folder with changes to source.
 
+## Exe File: 
+https://github.com/marlonbrum/Br1.GitPack/tree/master/exe
+
 ## Usage:  
     GitPack pointA..pointB buildFolder  
 Generate a folder with changes from pointA in code to pointB  
