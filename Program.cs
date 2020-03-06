@@ -87,6 +87,7 @@ namespace BuildCreatorGit
                     return;
                 }
 
+                Console.WriteLine("Running GitDiff...");
                 string[] copiar = GitDiff("ACM", targets);
                 string[] excluir = GitDiff("D", targets);
 
