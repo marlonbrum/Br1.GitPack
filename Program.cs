@@ -79,7 +79,7 @@ namespace BuildCreatorGit
                     maxNumber = Math.Max(maxNumber, number);
             }
 
-           string folderName = Path.Combine(buildFolder, "b" + (maxNumber + 1).ToString("000"));
+           string folderName = Path.Combine(buildFolder, "B" + (maxNumber + 1).ToString("000"));
             Directory.CreateDirectory(folderName);
             return folderName;
         }
