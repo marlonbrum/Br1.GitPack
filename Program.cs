@@ -16,10 +16,17 @@ namespace BuildCreatorGit
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.FileName = "git";
-            p.StartInfo.Arguments = $"diff --no-renames --name-only --diff-filter={filter} {target}";
+            p.StartInfo.Arguments = $" --no-pager diff --no-renames -z --name-only --diff-filter={filter} {target}";
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.WorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            p.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+            p.ErrorDataReceived += P_ErrorDataReceived;
+            p.OutputDataReceived += P_OutputDataReceived;
+
+            Console.WriteLine("[git " + p.StartInfo.Arguments + "]");
+
             p.Start();
             string error = p.StandardError.ReadToEnd();
             if (!String.IsNullOrEmpty(error))
@@ -29,11 +36,25 @@ namespace BuildCreatorGit
                 Console.ResetColor();
                 return null;
             }
-
+            //p.StandardOutput.CurrentEncoding = Encoding.UTF8;
             string saida = p.StandardOutput.ReadToEnd();
-            saida = saida.Replace("\r", "");
+            // saida = saida.Replace("\0", "\n");
 
-            return saida.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            return saida.Split(new string[] { "\0" }, StringSplitOptions.RemoveEmptyEntries);
+          //  p.WaitForExit();
+            
+        }
+
+        private static void P_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Console.WriteLine("[git] " + e.Data);
+        }
+
+        private static void P_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("[git error] " + e.Data);
+            Console.ResetColor();
         }
 
         private static void PrintHelp()
@@ -114,7 +135,10 @@ namespace BuildCreatorGit
 
                             Directory.CreateDirectory(Path.GetDirectoryName(sDest));
 
-                            File.Copy(sArq, sDest);
+                            if (Directory.Exists(sArq))
+                                Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(sArq, sDest);
+                            else
+                                File.Copy(sArq, sDest);
                         }
                     }
 
@@ -141,7 +165,7 @@ namespace BuildCreatorGit
                 Console.ResetColor();
             }
 
-            //  Console.ReadKey();
+              Console.ReadKey();
         }
     }
 }
