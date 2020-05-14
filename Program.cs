@@ -6,56 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BuildCreatorGit
+namespace Br1.GitPack
 {
     class Program
     {
-        private static string[] GitDiff(string filter, string target)
-        {
-
-            Process p = new Process();
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.FileName = "git";
-            p.StartInfo.Arguments = $" --no-pager diff --no-renames -z --name-only --diff-filter={filter} {target}";
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.RedirectStandardError = true;
-            p.StartInfo.WorkingDirectory = System.IO.Directory.GetCurrentDirectory();
-            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-            p.StartInfo.StandardErrorEncoding = Encoding.UTF8;
-            p.ErrorDataReceived += P_ErrorDataReceived;
-            p.OutputDataReceived += P_OutputDataReceived;
-
-            Console.WriteLine("[git " + p.StartInfo.Arguments + "]");
-
-            p.Start();
-            string error = p.StandardError.ReadToEnd();
-            if (!String.IsNullOrEmpty(error))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(error);
-                Console.ResetColor();
-                return null;
-            }
-            //p.StandardOutput.CurrentEncoding = Encoding.UTF8;
-            string saida = p.StandardOutput.ReadToEnd();
-            // saida = saida.Replace("\0", "\n");
-
-            return saida.Split(new string[] { "\0" }, StringSplitOptions.RemoveEmptyEntries);
-          //  p.WaitForExit();
-            
-        }
-
-        private static void P_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            Console.WriteLine("[git] " + e.Data);
-        }
-
-        private static void P_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("[git error] " + e.Data);
-            Console.ResetColor();
-        }
 
         private static void PrintHelp()
         {
@@ -69,19 +23,13 @@ namespace BuildCreatorGit
             Console.WriteLine("     pointA e pointB could be a commit, branch or tag");
         }
 
-        private static string CreateBuildFolder(string buildFolder)
+        private static string CreateBuildFolder(string buildFolder, bool keepFiles)
         {
-            int maxNumber = 0;
-            foreach(string dir in Directory.EnumerateDirectories(buildFolder, "b???"))
-            {
-                int number = -1;
-                if (int.TryParse(dir.Substring(dir.Length - 3), out number))
-                    maxNumber = Math.Max(maxNumber, number);
-            }
-
-           string folderName = Path.Combine(buildFolder, "B" + (maxNumber + 1).ToString("000"));
-            Directory.CreateDirectory(folderName);
-            return folderName;
+            if (!keepFiles && Directory.Exists(buildFolder))
+                Directory.Delete(buildFolder, true);                       
+           
+            Directory.CreateDirectory(buildFolder);
+            return buildFolder;
         }
 
         static void Main(string[] args)
@@ -101,22 +49,31 @@ namespace BuildCreatorGit
                 // Second parameter: Build folder
                 string buildFolder = args[1];
 
+                bool keepFiles = false;
+                // Option: Keep files
+                foreach (string arg in args)
+                    if (arg == "-keep")
+                        keepFiles = true;
+
+                /*
                 if (!Directory.Exists(buildFolder))
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Cant find folder " + buildFolder);
+                    Console.ResetColor();
                     //Console.ReadKey();
                     return;
-                }
+                }*/
 
                 Console.WriteLine("Running GitDiff...");
-                string[] copiar = GitDiff("ACM", targets);
-                string[] excluir = GitDiff("D", targets);
+                string[] copiar = Git.Diff("ACM", targets);
+                string[] excluir = Git.Diff("D", targets);
 
                 if (copiar.Length == 0 && excluir.Length == 0)
                     Console.WriteLine("No modifications found");
                 else
                 {
-                    string folder = CreateBuildFolder(buildFolder);
+                    string folder = CreateBuildFolder(buildFolder, keepFiles);
                     Console.WriteLine("Creating build in folder " + folder);
 
                     if (copiar.Length > 0)
@@ -148,6 +105,8 @@ namespace BuildCreatorGit
                         for (int i = 0; i < excluir.Length; i++)
                             content += excluir[i];
 
+                        File.WriteAllText(Path.Combine(folder, "deleteList.txt"), content);
+
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine("There are some files that need to be deleted. Check deleteList.txt");
                         Console.ResetColor();
@@ -164,8 +123,15 @@ namespace BuildCreatorGit
                 Console.WriteLine(ex.StackTrace);
                 Console.ResetColor();
             }
-
-              Console.ReadKey();
+            finally
+            {
+                if (args.Contains("-wait"))
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Press any key to continue");
+                    Console.ReadKey();
+                }
+            }
         }
     }
 }
