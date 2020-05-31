@@ -101,9 +101,9 @@ namespace Br1.GitPack
 
                     if (excluir.Length > 0)
                     {
-                        string content = "Excluir os arquivos abaixo: \r\n\r\n";
+                        string content = "Excluir os arquivos abaixo: \n\n";
                         for (int i = 0; i < excluir.Length; i++)
-                            content += excluir[i];
+                            content += excluir[i] + "\n";
 
                         File.WriteAllText(Path.Combine(folder, "deleteList.txt"), content);
 

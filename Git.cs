@@ -27,19 +27,26 @@ namespace Br1.GitPack
             Console.WriteLine("[git " + p.StartInfo.Arguments + "]");
 
             p.Start();
-            string error = p.StandardError.ReadToEnd();
-            if (!String.IsNullOrEmpty(error))
+
+            string sOutput = "";
+            while (p.StandardOutput.Peek() > -1)
+                sOutput += p.StandardOutput.ReadLine();
+
+            List<String> lError = new List<string>();
+            while (p.StandardError.Peek() > -1)
+                lError.Add(p.StandardError.ReadLine());
+
+            //            string error = p.StandardError.ReadToEnd();
+            if (lError.Count > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(error);
+                foreach(string line in lError)
+                    Console.WriteLine(line);
                 Console.ResetColor();
                 return null;
             }
-            //p.StandardOutput.CurrentEncoding = Encoding.UTF8;
-            string saida = p.StandardOutput.ReadToEnd();
-            // saida = saida.Replace("\0", "\n");
 
-            return saida.Split(new string[] { "\0" }, StringSplitOptions.RemoveEmptyEntries);
+            return sOutput.Split(new string[] { "\0" }, StringSplitOptions.RemoveEmptyEntries);
             //  p.WaitForExit();
 
         }
